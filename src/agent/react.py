@@ -168,7 +168,7 @@ class ReactAgent:
         }
 
         final_answer = None
-        max_iterations = 5
+        max_iterations = 30
         iteration = 0
         current_prompt = query
 

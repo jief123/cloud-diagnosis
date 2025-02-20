@@ -32,7 +32,7 @@ async def test_bedrock_llm():
     logger.info("Context: %s", json.dumps(context, indent=2))
     
     try:
-        response = await llm.generate_thought(test_query, context, history)
+        response = await llm.generate_thought(test_query, history)
         print("\n=== Model Response ===")
         print(response)
         print("=====================")

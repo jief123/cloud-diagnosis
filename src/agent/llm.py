@@ -2,6 +2,18 @@ import boto3
 import json
 import logging
 from typing import List, Dict, Any
+from botocore.config import Config
+
+
+
+
+config = Config(
+    retries = dict(
+        max_attempts = 100,  # 最大重试次数
+        mode = 'standard'   # 自适应重试模式
+    )
+)
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -11,36 +23,40 @@ class BedrockLLM:
         # Initialize boto3 session with cross-region configuration
         self.client = boto3.client(
             'bedrock-runtime',
-            region_name='us-west-2'  # Bedrock's primary region for cross-region inference
+            config=config,
+            region_name='us-east-1'  # Bedrock's primary region for cross-region inference
         )
-        self.modelid = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        self.modelid = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+        #self.modelid = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
 
     def _create_system_prompt(self) -> List[Dict]:
         return [{
-            "text": """You are a infrastructure operator agent. Your goal is to help users understand  their cloud & Services environment.
+            "text": """
+            You are a infrastructure operator agent. Your goal is to help users understand their cloud & Services environment.
 
-AVAILABLE TOOLS:
+            AVAILABLE TOOLS:
 
-Basic bash commands for system information, on basic shell can use ssh command to logging into remote server and check aws enviroment with
-AWS CLI commands (e.g., aws ec2 describe-instances, aws cloudwatch get-metric-data)
-RESPONSE FORMAT:
-You should provide ONE Thought and ONE Action at a time, then wait for user's response before proceeding.
-Follow this exact format:
-**
-Thought: [Your detailed reasoning about what information you need and why]
-Action: [The exact command to execute]
-**
+            Basic bash commands for system information, on basic shell can use ssh command to logging into remote server and check aws enviroment with
+            AWS CLI commands (e.g., aws ec2 describe-instances, aws cloudwatch get-metric-data)
+            RESPONSE FORMAT:
+            You should provide ONE Thought and ONE Action at a time, then wait for user's response before proceeding.
+            Follow this exact format:
 
-If you don't have any other action to take, please Follow this exact format:
-Final Answer: [Clear, concise conclusion based on the observations]
+            Thought: [Your detailed reasoning about what information you need and why]
+            Action: [The exact command to execute]
 
-IMPORTANT RULES:
 
-NEVER skip the Thought and Action steps - they are required
-Include necessary parameters like --region for AWS commands
-Use --query parameter to filter AWS CLI output when possible
-Be explicit about what you're checking and why
-If an error occurs, explain it in your reasoning and try an alternative approach"""
+            If you don't have any other action to take, please Follow this exact format:
+            Final Answer: [Clear, concise conclusion based on the observations]
+
+            IMPORTANT RULES:
+
+            NEVER skip the Thought and Action steps - they are required
+            All AWS CLI command should be generate json output with --output json
+            Include necessary parameters like --region for AWS commands
+            Use --query parameter to filter AWS CLI output when possible
+            Be explicit about what you're checking and why
+            If an error occurs, explain it in your reasoning and try an alternative approach"""
         }]
     
     def _create_messages(self, query: str, history: List[Dict]) -> List[Dict]:
