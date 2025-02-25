@@ -176,28 +176,25 @@ class ReactAgent:
             # Generate next thought and action
             response = await self.llm.generate_thought(
                 query=current_prompt,
-                # context=self.current_context,
                 history=self.conversation_history
             )
             
-            # Parse LLM response
-            components = self._parse_llm_response(response)
-
+            # Handle reasoning
+            if response['reasoning']:
+                self._display_thought(response['reasoning'])
+                conversation_entry['thoughts'].append(response['reasoning'])
+            
+            # Parse action response
+            components = self._parse_llm_response(response['action'])
+            
             # If we have a final answer, break the loop
             if components['final_answer']:
                 final_answer = components['final_answer']
                 self._display_final_answer(final_answer)
                 break
-                
-            # Handle thoughts (可能有多个)
-            thoughts = components['thought'].split('\n') if '\n' in components['thought'] else [components['thought']]
-            for thought in thoughts:
-                if thought.strip():
-                    self._display_thought(thought)
-                    conversation_entry['thoughts'].append(thought)
-
-            # Handle actions (可能有多个)
-            actions = components['action'].split('\n') if '\n' in components['action'] else [components['action']]
+            
+            # Handle actions
+            actions = [components['action']] if components['action'] else []
             observations = []
             
             for action in actions:
@@ -243,4 +240,3 @@ class ReactAgent:
             self.conversation_history.append(conversation_entry)
         
         return final_answer or "I apologize, but I was unable to reach a conclusive answer within the allowed iterations."
-        

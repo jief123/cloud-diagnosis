@@ -1,0 +1,117 @@
+@startuml React Implementation Details
+
+' Style
+skinparam backgroundColor #FFFFFF
+skinparam activityDiamondBackgroundColor #FEFECE
+skinparam activityBackgroundColor #FEFECE
+skinparam activityBorderColor #000000
+skinparam arrowColor #000000
+skinparam noteBackgroundColor #FFFACD
+skinparam noteBorderColor #999999
+
+' Title
+title React Agent Implementation Details
+
+' Start
+start
+
+:Initialize ReactAgent;
+note right
+  - llm = BedrockLLM()
+  - executor = CommandExecutor()
+  - conversation_history = []
+end note
+
+:Receive User Query;
+note right: process_query(query: str)
+
+repeat
+    partition "Generate Next Step" #palegreen {
+        :BedrockLLM.generate_thought();
+        note right
+          Inputs:
+          - query
+          - conversation_history
+          Uses Claude 3.5 Sonnet model
+        end note
+        
+        :_parse_llm_response();
+        note right
+          Extracts components:
+          - thought
+          - action
+          - final_answer
+        end note
+    }
+
+    if (Has final_answer?) then (yes)
+        partition "Final Answer" #yellow {
+            :_display_final_answer();
+            note right: Red bordered panel
+            
+            :Update conversation_history;
+            note right
+              Stores complete interaction:
+              - User input
+              - Thoughts
+              - Actions
+              - Observations
+            end note
+            
+            stop
+        }
+    else (no)
+        partition "Thought Phase" #lightgreen {
+            :_display_thought();
+            note right: Blue bordered panel
+            :Store thought in conversation;
+        }
+
+        partition "Action Phase" #lightblue {
+            :_display_action();
+            note right: Yellow bordered panel
+            
+            :executor.execute_command();
+            note right
+              Returns:
+              - output (str)
+              - success (bool)
+            end note
+            
+            :Store action in conversation;
+        }
+
+        partition "Observation Phase" #pink {
+            :_display_observation();
+            note right: Green bordered panel
+            
+            :Process command output;
+            note right
+              - Parse JSON if possible
+              - Format output
+              - Handle errors
+            end note
+            
+            :Store observation in conversation;
+        }
+    endif
+
+    :Update current prompt;
+
+repeat while (iteration < 30?) is (yes)
+->no;
+
+:Return "Unable to reach conclusion";
+
+stop
+
+legend right
+  Implementation Flow:
+  <back:#palegreen>■</back> LLM Generation
+  <back:#lightgreen>■</back> Thought Phase
+  <back:#lightblue>■</back> Action Phase
+  <back:#pink>■</back> Observation Phase
+  <back:#yellow>■</back> Final Answer
+end legend
+
+@enduml

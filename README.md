@@ -5,27 +5,58 @@ An intelligent agent that uses the ReAct (Reason-Act) pattern to diagnose and an
 ## Features
 
 - Interactive CLI interface with rich formatting
-- ReAct pattern implementation for systematic reasoning and action
+- ReAct pattern implementation with Claude 3.7 Sonnet's extended thinking capabilities:
+  - Native thinking blocks for enhanced reasoning
+  - Step-by-step reasoning with detailed thought process
+  - Support for up to 128K output tokens
+  - Automatic thinking budget management (default: 4,000 tokens)
+  - Preservation of thinking context across interactions
 - Command execution integration for cloud environment analysis
 - Real-time display of:
-  - Thought process (💭)
+  - Extended thinking process (💭)
   - Actions being executed (⚡)
   - Observations from commands (👁️)
   - Final conclusions (🎯)
 - Color-coded output sections for better readability
-- Conversation history tracking for context awareness
+- Conversation history tracking with thinking block preservation
 
 ## Prerequisites
 
 - Python 3.8 or higher
 - AWS CLI configured with appropriate credentials
 - AWS Bedrock access configured with appropriate permissions
+- Claude 3.7 Sonnet model access enabled in AWS Bedrock
 - Required Python packages:
-  - boto3 >= 1.28.0 (AWS SDK)
-  - botocore >= 1.31.0
+  - boto3 >= 1.37.0 (AWS SDK)
+  - botocore >= 1.37.0
   - rich >= 13.0.0 (Terminal formatting)
   - typer >= 0.9.0 (CLI interface)
   - pydantic >= 2.0.0 (Data validation)
+
+## Extended Thinking Configuration
+
+The agent uses Claude 3.7 Sonnet's extended thinking capabilities for enhanced reasoning:
+
+- Default thinking budget: 4,000 tokens
+- Maximum output length: 24,000 tokens
+- Thinking blocks are preserved across conversation turns
+- Redacted thinking blocks are handled securely
+- Thinking signatures are validated for security
+
+You can customize the thinking configuration when initializing the agent:
+
+```python
+from agent.llm import BedrockLLM, ThinkingConfig
+
+# Custom thinking configuration
+config = ThinkingConfig(
+    type="enabled",
+    budget_tokens=8000  # Increase thinking budget for complex tasks
+)
+
+# Initialize agent with custom config
+llm = BedrockLLM(thinking_config=config)
+```
 
 ## Installation
 
@@ -60,6 +91,22 @@ The agent will start an interactive session where you can ask questions about yo
 4. Provides a comprehensive answer
 
 Type 'exit' to quit the application.
+
+### Testing Claude 3.7 Extended Thinking
+
+A simple test script is provided to demonstrate Claude 3.7's extended thinking capabilities:
+
+```bash
+python src/test_claude_thinking.py
+```
+
+This standalone script shows how to:
+- Configure the Bedrock converse API with extended thinking
+- Process reasoning content from Claude's response
+- Extract both reasoning and final answers
+- Handle the nested structure of reasoning blocks
+
+The test script is self-contained and doesn't depend on other project components, making it a good reference for understanding how to work with Claude's extended thinking feature directly.
 
 ## Example Interaction
 
@@ -100,7 +147,8 @@ cloud-diagnosis/
 │   ├── cli/
 │   │   ├── __init__.py
 │   │   └── interface.py    # Interactive CLI with Typer
-│   └── main.py             # Application entry point
+│   ├── main.py             # Application entry point
+│   └── test_claude_thinking.py  # Standalone test for Claude 3.7 extended thinking
 ├── requirements.txt        # Project dependencies
 └── README.md
 ```

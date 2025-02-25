@@ -1,0 +1,92 @@
+@startuml Cloud Diagnosis System
+
+' Style and theme
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' Title
+title Cloud Diagnosis System Architecture
+
+' Main package
+package "Cloud Diagnosis" {
+    ' CLI Package
+    package "cli" {
+        class "Interface" {
+            + app: Typer
+            + console: Console
+            + main()
+        }
+    }
+
+    ' Agent Package
+    package "agent" {
+        class "ReactAgent" {
+            - llm: BedrockLLM
+            - executor: CommandExecutor
+            - conversation_history: List[Dict]
+            - console: Console
+            + __init__()
+            + process_query(query: str): str
+            - _display_thought(thought: str)
+            - _display_action(action: str)
+            - _display_observation(observation: str)
+            - _display_final_answer(answer: str)
+            - _parse_llm_response(response: str): Dict[str, str]
+        }
+
+        class "BedrockLLM" {
+            - client: boto3.client
+            - modelid: str
+            + __init__()
+            + generate_thought(query: str, history: List[Dict]): str
+            - _create_system_prompt(): List[Dict]
+            - _create_messages(query: str, history: List[Dict]): List[Dict]
+        }
+
+        class "CommandExecutor" {
+            - last_result: Optional[Dict]
+            + execute_command(command: str): Tuple[str, bool]
+            + parse_aws_output(output: str): Dict
+            + format_output(output: str, success: bool): str
+        }
+    }
+
+    ' Main entry
+    class "Main" {
+        + main()
+    }
+}
+
+' Relationships
+Main --> Interface : uses
+Interface --> ReactAgent : creates/uses
+ReactAgent --> BedrockLLM : uses
+ReactAgent --> CommandExecutor : uses
+
+' Notes
+note right of BedrockLLM
+  Handles communication with
+  AWS Bedrock for LLM inference
+end note
+
+note right of CommandExecutor
+  Executes shell commands and
+  AWS CLI operations
+end note
+
+note right of ReactAgent
+  Implements ReAct pattern:
+  Reason -> Act -> Observe
+end note
+
+' Data flow
+Interface ..> ReactAgent : user query
+ReactAgent ..> BedrockLLM : generates thoughts
+ReactAgent ..> CommandExecutor : executes actions
+BedrockLLM ..> ReactAgent : LLM response
+CommandExecutor ..> ReactAgent : command results
+
+@enduml
